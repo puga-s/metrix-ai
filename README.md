@@ -13,8 +13,8 @@ Filter: Past 2 years; Include data from all projects/products, both development 
 
 4. Ticket Work Log - Data elements: IssueKey, Created, Updated, Started, Author, UpdateAuthor, TimeSpentSeconds
 
-B) Code check-in metadata from code repository tool like GitHub, extracted in CSV or excel format.
+B) Code check-in metadata from repository system like GitHub, extracted in CSV or excel format.
 
-Filter: Past 2 years
+Filter: Past 2 years; Include data from all repositories
 
 1. GIT Log - Data elements: CommitHash, Repository, Author, Committer, Timestamp, Subject, NumberOfFiles, NumberOfLines, AddedLines, DeletedLines
