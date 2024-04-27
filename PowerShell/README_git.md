@@ -84,11 +84,23 @@ RELATED LINKS
 
 ## Sample 
 
+If JIRA ticket(s) is referenced in the commit message:
+
 ```shell
 $ pwsh git.ps1 -CloneRoot "git@<git repo host>" \
     -Repositories "repo_1.git,repo_2.git" \
     -Since "2020-01-01" \
     -IssueKeyPattern "(JIRA-\d+)" \
+    -OutputFormat "JSON" \
+    -Verbose
+```
+
+If JIRA ticket(s) is not referenced in the commit message:
+
+```shell
+$ pwsh git.ps1 -CloneRoot "git@<git repo host>" \
+    -Repositories "repo_1.git,repo_2.git" \
+    -Since "2020-01-01" \
     -OutputFormat "JSON" \
     -Verbose
 ```
