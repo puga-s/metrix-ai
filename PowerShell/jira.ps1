@@ -59,7 +59,7 @@ param (
     [string] $Since,
     [Parameter(Mandatory = $false)]
     [string] $ExtraFields = $null,
-    [Parameter(Mandatory = $true)]
+    [Parameter(Mandatory = $false)]
     [ValidateSet("JSON", "CSV")]
     [string] $OutputFormat = "JSON"
 )
@@ -223,8 +223,10 @@ process {
                 $response.changelog.histories 
                 | ForEach-Object { 
                     $created = $_.created
+                    $historyId = $_.id
                     $_.items | ForEach-Object { 
                         [pscustomobject]@{
+                            historyId  = $historyId
                             created    = $created
                             field      = $_.field
                             fromString = $_.fromString
@@ -234,7 +236,8 @@ process {
                 } 
                 | ForEach-Object {
                     if ($_.field -eq "assignee") {
-                        $assigneeRpt.Add([pscustomobject] @{                            
+                        $assigneeRpt.Add([pscustomobject] @{
+                                HistoryId    = $historyId                            
                                 IssueKey     = $issueKey
                                 UpdatedAt    = (Format-DateTimeOffset -Date $_.created)
                                 FromAssignee = $_.fromString
@@ -242,7 +245,8 @@ process {
                             }      )
                     }
                     if ($_.field -eq "status") {
-                        $statusRpt.Add([pscustomobject] @{                            
+                        $statusRpt.Add([pscustomobject] @{   
+                                HistoryId  = $historyId                         
                                 IssueKey   = $issueKey
                                 UpdatedAt  = (Format-DateTimeOffset -Date $_.created)
                                 FromStatus = $_.fromString
