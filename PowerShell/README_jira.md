@@ -3,15 +3,16 @@
 ## Usage
 
 ```
+
 NAME
-    jira.ps1
+    /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1
     
 SYNOPSIS
     Capture JIRA metrics
     
     
 SYNTAX
-    jira.ps1 [-ApiUrl] <String> [-Username] <String> [-Password] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [-OutputFormat] <String> [<CommonParameters>]
+    /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 [-ApiUrl] <String> [-Username] <String> [-ApiToken] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [[-OutputFormat] <String>] [<CommonParameters>]
     
     
 DESCRIPTION
@@ -22,47 +23,17 @@ PARAMETERS
     -ApiUrl <String>
         JIRA API URL (Required)
         
-        Required?                    true
-        Position?                    1
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-        
     -Username <String>
         JIRA Username (Required)
         
-        Required?                    true
-        Position?                    2
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-        
-    -Password <String>
-        JIRA Password (Required)
-        
-        Required?                    true
-        Position?                    3
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
+    -ApiToken <String>
+        JIRA API Token - https://id.atlassian.com/manage-profile/security/api-tokens (Required)
         
     -Projects <String>
         JIRA Projects, comma separated (Optional)
         
-        Required?                    false
-        Position?                    4
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-        
     -Since <String>
         Only search tickets that were created after a certain date (yyyy-MM-dd) (Required)
-        
-        Required?                    true
-        Position?                    5
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
         
     -ExtraFields <String>
         In addition to following fields, you can also specify additional fields (comma separated) to be included in the report. (Optional)
@@ -84,20 +55,8 @@ PARAMETERS
         * resolution
         * resolutiondate
         
-        Required?                    false
-        Position?                    6
-        Default value                
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
-        
     -OutputFormat <String>
         Output format (JSON or CSV) (Optional, Default: JSON)
-        
-        Required?                    true
-        Position?                    7
-        Default value                JSON
-        Accept pipeline input?       false
-        Accept wildcard characters?  false
         
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
@@ -105,22 +64,34 @@ PARAMETERS
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
         about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
     
-INPUTS
-    
-OUTPUTS
-    
-    
-RELATED LINKS
+REMARKS
+    To see the examples, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Examples"
+    For more information, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Detailed"
+    For technical information, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Full"
 ```
 
 ## Sample
 
+### Linux & Mac
+
 ```shell
 $ pwsh jira.ps1 -ApiUrl "https://<company>.atlassian.net" \
     -Username "<jira.user.login>" \
-    -Password "<jira.user.password>" \
+    -ApiToken "<jira.user.api.token>" \
     -Project "project_1,project_2" \
     -Since "2020-01-01" \
     -OutputFormat "JSON" \
+    -Verbose
+```
+
+### Windows
+
+```shell
+.\jira.ps1 -ApiUrl "https://<company>.atlassian.net" `
+    -Username "<jira.user.login>" `
+    -ApiToken "<jira.user.api.token>" `
+    -Project "project_1,project_2" `
+    -Since "2020-01-01" `
+    -OutputFormat "JSON" `
     -Verbose
 ```

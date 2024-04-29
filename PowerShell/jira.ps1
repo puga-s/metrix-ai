@@ -11,8 +11,8 @@
 	.PARAMETER Username
 		JIRA Username (Required)
 
-	.PARAMETER Password
-		JIRA Password (Required)
+	.PARAMETER ApiToken
+		JIRA API Token - https://id.atlassian.com/manage-profile/security/api-tokens (Required)
 	
 	.PARAMETER Projects
 		JIRA Projects, comma separated (Optional) 
@@ -52,7 +52,7 @@ param (
     [Parameter(Mandatory = $true)]
     [string] $Username,
     [Parameter(Mandatory = $true)]
-    [string] $Password,
+    [string] $ApiToken,
     [Parameter(Mandatory = $false)]
     [string] $Projects = $null,
     [Parameter(Mandatory = $true)]
@@ -82,11 +82,11 @@ process {
     function Get-BasicAuthHeader {
         param (
             $Username,
-            $Password
+            $ApiToken
         )
 
         process {
-            $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $Username, $Password)))
+            $base64AuthInfo = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes(("{0}:{1}" -f $Username, $ApiToken)))
             return "Basic $base64AuthInfo"
         }
     }
@@ -407,7 +407,7 @@ process {
 
     $fileSuffix = (Get-Date -Format "yyyyMMddHHmmss")
 
-    $authHeader = Get-BasicAuthHeader -Username $Username -Password $Password
+    $authHeader = Get-BasicAuthHeader -Username $Username -ApiToken $ApiToken
 
     $ticketReport, $tickets = Get-JiraTicket -ApiUrl $ApiUrl -AuthHeader $authHeader -Projects $Projects -Since $Since -Fields $fixedFields -ExtraFields $ExtraFields
 
