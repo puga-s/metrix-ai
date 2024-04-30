@@ -122,3 +122,18 @@ If JIRA ticket(s) is not referenced in the commit message:
     -OutputFormat "JSON" `
     -Verbose
 ```
+
+#### Hints
+If unable to run Powershell.Check and Set Execution policy accordingly:
+```shell
+Get-ExecutionPolicy -List
+Set-ExecutionPolicy Unrestricted
+```
+
+If unable to connect to GIT repository.Add following entry in ~/.ssh/config file replacing with "your-privatekey-file" name:
+```shell
+Host github.com
+  HostName github.com
+  IdentityFile ~/.ssh/your-privatekey-file
+ ``` 
+

@@ -90,3 +90,10 @@ $ pwsh jira.ps1 -ApiUrl "https://<company>.atlassian.net" \
     -OutputFormat "JSON" `
     -Verbose
 ```
+
+#### Hints
+If unable to run Powershell. Check and Set Execution policy accordingly
+```shell
+Get-ExecutionPolicy -List
+Set-ExecutionPolicy Unrestricted
+```
