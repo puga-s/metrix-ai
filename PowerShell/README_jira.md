@@ -5,14 +5,14 @@
 ```
 
 NAME
-    /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1
+    jira.ps1
     
 SYNOPSIS
     Capture JIRA metrics
     
     
 SYNTAX
-    /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 [-ApiUrl] <String> [-Username] <String> [-ApiToken] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [[-OutputFormat] <String>] [<CommonParameters>]
+    jira.ps1 [-ApiUrl] <String> [-Username] <String> [-ApiToken] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [[-OutputFormat] <String>] [<CommonParameters>]
     
     
 DESCRIPTION
@@ -62,12 +62,7 @@ PARAMETERS
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
-    
-REMARKS
-    To see the examples, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Examples"
-    For more information, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Detailed"
-    For technical information, type: "Get-Help /Users/yafeiliu/Projects/OptiCloudPros/metrix-ai/PowerShell/jira.ps1 -Full"
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).     
 ```
 
 ## Sample
