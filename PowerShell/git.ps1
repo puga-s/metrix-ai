@@ -96,7 +96,7 @@ process {
             $commitReport = @()
             $issueKeyReport = @()
 
-            if ($null -ne $IssueKeyPattern) {
+            if ($null -ne $IssueKeyPattern -and "" -ne $IssueKeyPattern) {
                 [System.Text.RegularExpressions.RegexOptions] $opt = [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
                 [System.Text.RegularExpressions.RegexOptions] $opt += [System.Text.RegularExpressions.RegexOptions]::Compiled
         
@@ -117,7 +117,7 @@ process {
                         $items = $_.Split("`t")
                         $author = "$($items[1])"
                         $subject = ("$($items[4])" -Replace "'", "")
-                        if ($null -ne $IssueKeyPattern) {
+                        if ($null -ne $regex) {
                             $issueKeys = @($regex.Matches($subject) | ForEach-Object { $_.Groups[1].Value })
                         }
                         else {
@@ -203,11 +203,15 @@ process {
     switch ($OutputFormat) {
         "JSON" {
             $commitReport | ConvertTo-Json | Out-File -FilePath "git_commit_$($fileSuffix).json"
-            $issueKeyReport | ConvertTo-Json | Out-File -FilePath "git_issuekey_$($fileSuffix).json"
+            if ($null -ne $IssueKeyPattern -and "" -ne $IssueKeyPattern) {
+                $issueKeyReport | ConvertTo-Json | Out-File -FilePath "git_issuekey_$($fileSuffix).json"
+            }
         }
         "CSV" {
             $commitReport | Export-Csv -Path "git_commit_$($fileSuffix).csv" -NoTypeInformation
-            $issueKeyReport | Export-Csv -Path "git_issuekey_$($fileSuffix).csv" -NoTypeInformation
+            if ($null -ne $IssueKeyPattern -and "" -ne $IssueKeyPattern) {
+                $issueKeyReport | Export-Csv -Path "git_issuekey_$($fileSuffix).csv" -NoTypeInformation
+            }
         }
     }
 }
