@@ -70,7 +70,11 @@ process {
                     Write-Verbose "Update repository $($repo)"
                     try {
                         Push-Location "./$($repo)"
-                        git fetch --all --prune > /dev/null 2>&1
+                        if ($IsWindows) {
+                            git fetch --all --prune
+                        } else {
+                            git fetch --all --prune > /dev/null 2>&1
+                        }
                     }
                     finally {
                         Pop-Location
