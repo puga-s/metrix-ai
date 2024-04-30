@@ -1,6 +1,6 @@
 # metrix-ai
 
-Data of Software Development Lifecycle (SDLC) and code commit logs to help analyze, benchmark and identify optimization opportunities in the process.
+Software Development Lifecycle (SDLC) ticket data and code commit log to help analyze, benchmark and identify optimization opportunities in the process.
 
 Use the scripts in the sub-folder PowerShell to pull data from Jira and Git.
 Note: Only metadata of git commit logs are used, not the source code.
