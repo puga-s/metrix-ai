@@ -77,6 +77,13 @@ PARAMETERS
 
 ## Sample 
 
+### `CloneRoot` & `Repositories` Values
+
+| Git Clone Type | Git Clone URL                           | CloneRoot                 | Repository    |
+| -------------- | --------------------------------------- | ------------------------- | ------------- |
+| HTTP           | https://github.com/puga-s/metrix-ai.git | https://github.com/puga-s | metrix-ai.git |
+| SSH            | git@github.com:puga-s/metrix-ai.git     | git@github.com:puga-s     | metrix-ai.git |
+
 ### Linux & Mac
 
 If JIRA ticket(s) is referenced in the commit message:
