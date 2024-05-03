@@ -67,13 +67,17 @@ PARAMETERS
 
 ## Sample
 
+> **Username** should be the email address.
+> 
+> **Project** should be the project `Key` (Project → view all projects → Key column)
+
 ### Linux & Mac
 
 ```shell
 $ pwsh jira.ps1 -ApiUrl "https://<company>.atlassian.net" \
-    -Username "<jira.user.login>" \
+    -Username "<jira.user.email>" \
     -ApiToken "<jira.user.api.token>" \
-    -Project "project_1,project_2" \
+    -Project "project_key_1,project_key_2" \
     -Since "2020-01-01" \
     -OutputFormat "JSON" \
     -Verbose
@@ -83,9 +87,9 @@ $ pwsh jira.ps1 -ApiUrl "https://<company>.atlassian.net" \
 
 ```shell
 .\jira.ps1 -ApiUrl "https://<company>.atlassian.net" `
-    -Username "<jira.user.login>" `
+    -Username "<jira.user.email>" `
     -ApiToken "<jira.user.api.token>" `
-    -Project "project_1,project_2" `
+    -Project "project_key_1,project_key_2" `
     -Since "2020-01-01" `
     -OutputFormat "JSON" `
     -Verbose
