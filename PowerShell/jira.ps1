@@ -224,10 +224,12 @@ process {
                 | ForEach-Object { 
                     $created = $_.created
                     $historyId = $_.id
+                    $updatedBy = $_.author.displayName
                     $_.items | ForEach-Object { 
                         [pscustomobject]@{
                             historyId  = $historyId
                             created    = $created
+                            updatedBy  = $updatedBy
                             field      = $_.field
                             fromString = $_.fromString
                             toString   = $_.toString
@@ -240,6 +242,7 @@ process {
                                 HistoryId    = $historyId                            
                                 IssueKey     = $issueKey
                                 UpdatedAt    = (Format-DateTimeOffset -Date $_.created)
+                                UpdatedBy    = $updatedBy
                                 FromAssignee = $_.fromString
                                 ToAssignee   = $_.toString
                             }      )
@@ -249,6 +252,7 @@ process {
                                 HistoryId  = $historyId                         
                                 IssueKey   = $issueKey
                                 UpdatedAt  = (Format-DateTimeOffset -Date $_.created)
+                                UpdatedBy  = $updatedBy
                                 FromStatus = $_.fromString
                                 ToStatus   = $_.toString
                             })      
