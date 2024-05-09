@@ -399,6 +399,7 @@ process {
         "created",
         "fixVersions",
         "aggregatetimeoriginalestimate",
+        "aggregatetimespent",
         "progress",
         "updated",
         "project",
