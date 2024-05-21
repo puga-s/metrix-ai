@@ -106,7 +106,7 @@ process {
             $headers.Add("Authorization", $AuthHeader)
     
             $rawJql = ""
-            if ($null -ne $Projects) {
+            if ($null -ne $Projects -and $Projects -ne "") {
                 $projectList = ($Projects.Split(",") | ForEach-Object { $_ -match "\s" ? "`"$($_)`"" : $_ } ) -join ","
                 $rawJql = "project in ($($projectList)) and " 
             }
