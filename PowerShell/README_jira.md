@@ -3,7 +3,6 @@
 ## Usage
 
 ```
-
 NAME
     jira.ps1
     
@@ -12,7 +11,7 @@ SYNOPSIS
     
     
 SYNTAX
-    jira.ps1 [-ApiUrl] <String> [-Username] <String> [-ApiToken] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [[-OutputFormat] <String>] [<CommonParameters>]
+    jira.ps1 [-ApiUrl] <String> [-Username] <String> [-ApiToken] <String> [[-Projects] <String>] [-Since] <String> [[-ExtraFields] <String>] [[-MaxResultsPerFile] <Int32>] [[-OutputFormat] <String>] [<CommonParameters>]
     
     
 DESCRIPTION
@@ -23,17 +22,47 @@ PARAMETERS
     -ApiUrl <String>
         JIRA API URL (Required)
         
+        Required?                    true
+        Position?                    1
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
     -Username <String>
         JIRA Username (Required)
+        
+        Required?                    true
+        Position?                    2
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
         
     -ApiToken <String>
         JIRA API Token - https://id.atlassian.com/manage-profile/security/api-tokens (Required)
         
+        Required?                    true
+        Position?                    3
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
     -Projects <String>
         JIRA Projects, comma separated (Optional)
         
+        Required?                    false
+        Position?                    4
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
     -Since <String>
         Only search tickets that were created after a certain date (yyyy-MM-dd) (Required)
+        
+        Required?                    true
+        Position?                    5
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
         
     -ExtraFields <String>
         In addition to following fields, you can also specify additional fields (comma separated) to be included in the report. (Optional)
@@ -55,14 +84,35 @@ PARAMETERS
         * resolution
         * resolutiondate
         
+        Required?                    false
+        Position?                    6
+        Default value                
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
+    -MaxResultsPerFile <Int32>
+        Maximum number of results per file (jira_ticket_*) (Optional, Default: 1000)
+        
+        Required?                    false
+        Position?                    7
+        Default value                1000
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
+        
     -OutputFormat <String>
         Output format (JSON or CSV) (Optional, Default: JSON)
+        
+        Required?                    false
+        Position?                    8
+        Default value                JSON
+        Accept pipeline input?       false
+        Accept wildcard characters?  false
         
     <CommonParameters>
         This cmdlet supports the common parameters: Verbose, Debug,
         ErrorAction, ErrorVariable, WarningAction, WarningVariable,
         OutBuffer, PipelineVariable, and OutVariable. For more information, see
-        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216).     
+        about_CommonParameters (https://go.microsoft.com/fwlink/?LinkID=113216). 
 ```
 
 ## Sample

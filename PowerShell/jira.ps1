@@ -39,7 +39,10 @@
         * priority
         * resolution
         * resolutiondate
-        
+
+    .PARAMETER MaxResultsPerFile
+        Maximum number of results per file (jira_ticket_*) (Optional, Default: 1000)   
+
     .PARAMETER OutputFormat
         Output format (JSON or CSV) (Optional, Default: JSON)
 
@@ -59,6 +62,8 @@ param (
     [string] $Since,
     [Parameter(Mandatory = $false)]
     [string] $ExtraFields = $null,
+    [Parameter(Mandatory = $false)]
+    [int] $MaxResultsPerFile = 1000,
     [Parameter(Mandatory = $false)]
     [ValidateSet("JSON", "CSV")]
     [string] $OutputFormat = "JSON"
@@ -99,7 +104,9 @@ process {
             $Projects,
             $Since,
             $Fields,
-            $ExtraFields
+            $ExtraFields,
+            $StartAt,
+            $MaxResults
         )
         process {
             $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -119,68 +126,61 @@ process {
 
             $fieldList = ($null -eq $ExtraFields ? $Fields : ($Fields += $ExtraFields -split ",")) -join ","
 
-            $startAt = 0
-            $maxResults = 100
-    
             $report = @()
             $tickets = @()
 
-            do {
+            $url = "$($ApiUrl)/rest/api/2/search?startAt=$($StartAt)&maxResults=$($MaxResults)&jql=$($jql)&fields=$($fieldList)"
                 
-                $url = "$($ApiUrl)/rest/api/2/search?startAt=$($startAt)&maxResults=$($maxResults)&jql=$($jql)&fields=$($fieldList)"
+            Write-Verbose "Retrieve next batch tickets from $($url)"
                 
-                Write-Verbose "Retrieve next batch tickets from $($url)"
-                
-                $response = Invoke-RestMethod $url -Method 'GET' -Headers $headers
+            $response = Invoke-RestMethod $url -Method 'GET' -Headers $headers
     
-                $startAt = $response.startAt + $response.maxResults
+            $local:nextStartAt = $response.startAt + $response.maxResults
     
-                if ($startAt -lt $response.total) {
-                    $moreResult = $true
+            if ($startAt -lt $response.total) {
+                $local:moreResult = $true
+            }
+            else {
+                $local:moreResult = $false
+            }
+    
+            $response.issues | ForEach-Object {
+                $item = $_
+                $tickets += [PSCustomObject]@{
+                    IssueKey = $item.key
+                    Url      = $item.self
                 }
-                else {
-                    $moreResult = $false
+                $properties = [ordered]@{
+                    IssueType      = $_.fields.issuetype.name
+                    IssueKey       = $_.key
+                    IssueId        = $_.id
+                    ParentKey      = $_.fields.parent.key
+                    ParentType     = $_.fields.parent.fields.issuetype.name
+                    Release        = ($_.fields.fixVersions | ForEach-Object { $_.name }) -join ","
+                    Status         = $_.fields.status.name
+                    Summary        = $_.fields.summary
+                    Assignee       = $_.fields.assignee.displayName
+                    Reporter       = $_.fields.reporter.displayName
+                    Created        = (Format-DateTimeOffset -Date $_.fields.created)
+                    Updated        = (Format-DateTimeOffset -Date $_.fields.updated)
+                    TimeEstimate   = $_.fields.aggregatetimeoriginalestimate
+                    TimeSpent      = $_.fields.aggregatetimespent
+                    ProjectType    = $_.fields.project.projectTypeKey
+                    Project        = $_.fields.project.name
+                    Priority       = $_.fields.priority.name
+                    Resolution     = $_.fields.resolution.name
+                    ResolutionDate = (Format-DateTimeOffset -Date $_.fields.resolutiondate)
                 }
-    
-                $response.issues | ForEach-Object {
-                    $item = $_
-                    $tickets += [PSCustomObject]@{
-                        IssueKey = $item.key
-                        Url      = $item.self
+                if ($null -ne $ExtraFields -and $ExtraFields -notmatch "") {
+                    $ExtraFields | ForEach-Object {
+                        $properties[$_] = $item.fields.$_
                     }
-                    $properties = [ordered]@{
-                        IssueType      = $_.fields.issuetype.name
-                        IssueKey       = $_.key
-                        IssueId        = $_.id
-                        ParentKey      = $_.fields.parent.key
-                        ParentType     = $_.fields.parent.fields.issuetype.name
-                        Release        = ($_.fields.fixVersions | ForEach-Object { $_.name }) -join ","
-                        Status         = $_.fields.status.name
-                        Summary        = $_.fields.summary
-                        Assignee       = $_.fields.assignee.displayName
-                        Reporter       = $_.fields.reporter.displayName
-                        Created        = (Format-DateTimeOffset -Date $_.fields.created)
-                        Updated        = (Format-DateTimeOffset -Date $_.fields.updated)
-                        TimeEstimate   = $_.fields.aggregatetimeoriginalestimate
-                        TimeSpent      = $_.fields.aggregatetimespent
-                        ProjectType    = $_.fields.project.projectTypeKey
-                        Project        = $_.fields.project.name
-                        Priority       = $_.fields.priority.name
-                        Resolution     = $_.fields.resolution.name
-                        ResolutionDate = (Format-DateTimeOffset -Date $_.fields.resolutiondate)
-                    }
-                    if ($null -ne $ExtraFields -and $ExtraFields -notmatch "") {
-                        $ExtraFields | ForEach-Object {
-                            $properties[$_] = $item.fields.$_
-                        }
-                    }
+                }
 
-                    $report += New-Object PSObject -Property $properties
-                }
-    
-            } while ($moreResult -eq $true)
+                $report += New-Object PSObject -Property $properties
+            }
 
-            $report, $tickets
+            $report, $tickets, $local:moreResult, $local:nextStartAt
         }
     }
 
@@ -361,7 +361,8 @@ process {
             [Parameter(Mandatory = $true)]
             $AuthHeader,
             [Parameter(Mandatory = $true)]
-            $Since
+            $Since,
+            [string] $NextPage
         )
         process {
             $dateTime = [System.DateTime]::Parse($Since)
@@ -371,18 +372,15 @@ process {
             $aggregatedWorklogs = @()
 
             $lastPage = $false
-            $nextPage = [string] $null
-            do {
-                $updatedWorklogIds = Get-UpdatedWorklogIds -ApiUrl $ApiUrl -AuthHeader $AuthHeader -Since $sinceUtm -NextPage $nextPage
-                $lastPage = $updatedWorklogIds.LastPage
-                $nextPage = $updatedWorklogIds.NextPage
-                $workLogs = Get-Worklogs -ApiUrl $ApiUrl -AuthHeader $AuthHeader -UpdatedWorkLogIds $updatedWorklogIds.Ids
-                
-                $aggregatedWorklogs += $workLogs
-        
-            } while ( $lastPage -eq $false)
 
-            $aggregatedWorklogs
+            $updatedWorklogIds = Get-UpdatedWorklogIds -ApiUrl $ApiUrl -AuthHeader $AuthHeader -Since $sinceUtm -NextPage $NextPage
+            $lastPage = $updatedWorklogIds.LastPage
+            $nextPage2 = $updatedWorklogIds.NextPage
+            $workLogs = Get-Worklogs -ApiUrl $ApiUrl -AuthHeader $AuthHeader -UpdatedWorkLogIds $updatedWorklogIds.Ids
+                
+            $aggregatedWorklogs += $workLogs
+
+            $aggregatedWorklogs, $lastPage, $nextPage2
         }
     }
 
@@ -410,30 +408,79 @@ process {
 
     #----------------[ Main ]----------------
 
-    $fileSuffix = (Get-Date -Format "yyyyMMddHHmmss")
 
     $authHeader = Get-BasicAuthHeader -Username $Username -ApiToken $ApiToken
 
-    $ticketReport, $tickets = Get-JiraTicket -ApiUrl $ApiUrl -AuthHeader $authHeader -Projects $Projects -Since $Since -Fields $fixedFields -ExtraFields $ExtraFields
+    $startAt = 0
 
-    $assigneeReport, $statusReport, $relatedReport = Get-JiraMetrics -AuthHeader $authHeader -Tickets $tickets
+    $aggregatedTicketReport = @()
+    $aggregatedAssigneeReport = @()
+    $aggregatedStatusReport = @()
+    $aggregatedRelatedReport = @()
 
-    $worklogReport = Get-WorklogMetrics -ApiUrl $ApiUrl -AuthHeader $authHeader -Since $Since
+    do {
+        $fileSuffix = (Get-Date -Format "yyyyMMddHHmmss")
 
-    switch ($OutputFormat) {
-        "JSON" {
-            $ticketReport | ConvertTo-Json | Out-File -FilePath "jira_ticket_$($fileSuffix).json"
-            $assigneeReport | ConvertTo-Json | Out-File -FilePath "jira_assignee_$($fileSuffix).json"
-            $statusReport | ConvertTo-Json | Out-File -FilePath "jira_status_$($fileSuffix).json"
-            $relatedReport | ConvertTo-Json | Out-File -FilePath "jira_related_$($fileSuffix).json"
-            $worklogReport | ConvertTo-Json | Out-File -FilePath "jira_worklog_$($fileSuffix).json"
+        $ticketReport, $tickets, $moreResult, $nextStartAt = Get-JiraTicket -ApiUrl $ApiUrl `
+            -AuthHeader $authHeader `
+            -Projects $Projects `
+            -Since $Since `
+            -Fields $fixedFields `
+            -ExtraFields $ExtraFields `
+            -StartAt $startAt `
+            -MaxResults $MaxResultsPerFile
+
+        $startAt = $nextStartAt
+
+        $assigneeReport, $statusReport, $relatedReport = Get-JiraMetrics -AuthHeader $authHeader -Tickets $tickets
+
+        $aggregatedTicketReport += $ticketReport
+        $aggregatedAssigneeReport += $assigneeReport
+        $aggregatedStatusReport += $statusReport
+        $aggregatedRelatedReport += $relatedReport
+
+        if ($aggregatedTicketReport.Count -ge $MaxResultsPerFile -or $moreResult -eq $false) {
+            switch ($OutputFormat) {
+                "JSON" {
+                    $aggregatedTicketReport | ConvertTo-Json | Out-File -FilePath "jira_ticket_$($fileSuffix).json"
+                    $aggregatedAssigneeReport | ConvertTo-Json | Out-File -FilePath "jira_assignee_$($fileSuffix).json"
+                    $aggregatedStatusReport | ConvertTo-Json | Out-File -FilePath "jira_status_$($fileSuffix).json"
+                    $aggregatedRelatedReport | ConvertTo-Json | Out-File -FilePath "jira_related_$($fileSuffix).json"
+                }
+                "CSV" {
+                    $aggregatedTicketReport | Export-Csv -Path "jira_ticket_$($fileSuffix).csv" -NoTypeInformation
+                    $aggregatedAssigneeReport | Export-Csv -Path "jira_assignee_$($fileSuffix).csv" -NoTypeInformation
+                    $aggregatedStatusReport | Export-Csv -Path "jira_status_$($fileSuffix).csv" -NoTypeInformation
+                    $aggregatedRelatedReport | Export-Csv -Path "jira_related_$($fileSuffix).csv" -NoTypeInformation
+                }
+            }
+            $aggregatedTicketReport = @()
+            $aggregatedAssigneeReport = @()
+            $aggregatedStatusReport = @()
+            $aggregatedRelatedReport = @()
         }
-        "CSV" {
-            $ticketReport | Export-Csv -Path "jira_ticket_$($fileSuffix).csv" -NoTypeInformation
-            $assigneeReport | Export-Csv -Path "jira_assignee_$($fileSuffix).csv" -NoTypeInformation
-            $statusReport | Export-Csv -Path "jira_status_$($fileSuffix).csv" -NoTypeInformation
-            $relatedReport | Export-Csv -Path "jira_related_$($fileSuffix).csv" -NoTypeInformation
-            $worklogReport | Export-Csv -Path "jira_worklog_$($fileSuffix).csv" -NoTypeInformation
+        
+    } while ($moreResult -eq $true)
+
+    $nextPage = [string] $null
+    do {
+        $fileSuffix = (Get-Date -Format "yyyyMMddHHmmss")
+
+        $worklogReport, $lastPage, $nextPage2 = Get-WorklogMetrics -ApiUrl $ApiUrl `
+            -AuthHeader $authHeader `
+            -Since $Since `
+            -NextPage $nextPage
+
+        $nextPage = $nextPage2
+
+        switch ($OutputFormat) {
+            "JSON" {
+                $worklogReport | ConvertTo-Json | Out-File -FilePath "jira_worklog_$($fileSuffix).json"
+            }
+            "CSV" {
+                $worklogReport | Export-Csv -Path "jira_worklog_$($fileSuffix).csv" -NoTypeInformation
+            }
         }
-    }
+
+    } while ($lastPage -eq $false)
 }
