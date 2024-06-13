@@ -96,6 +96,33 @@ process {
         }
     }
 
+    function Get-CustomFieldMedataData {
+        [CmdletBinding()]
+        param (
+            $ApiUrl,
+            $AuthHeader,
+            $ExtraFields
+        )
+        process {
+            $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
+            $headers.Add("Authorization", $AuthHeader)
+    
+            $fields = $ExtraFields -split "," | ForEach-Object { $_.Trim() } 
+
+            $metadata = @{}
+            $url = "$($ApiUrl)/rest/api/2/field"
+            Write-Verbose "Retrieve custom field metadata from $($url)"
+            $response = Invoke-RestMethod $url -Method 'GET' -Headers $headers
+            $response | ForEach-Object {
+                if ($fields -contains $_.id) {
+                    $metadata[$_.id] = $_.name
+                }
+            }
+
+            $metadata
+        }
+    }
+
     function Get-JiraTicket {
         [CmdletBinding()]
         param (
@@ -109,6 +136,14 @@ process {
             $MaxResults
         )
         process {
+
+            if ($null -ne $ExtraFields -and $ExtraFields -ne "") {
+                $customFieldMetadata = Get-CustomFieldMedataData -ApiUrl $ApiUrl -AuthHeader $AuthHeader -ExtraFields $ExtraFields
+            }
+            else {
+                $customFieldMetadata = $null
+            }
+
             $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
             $headers.Add("Authorization", $AuthHeader)
     
@@ -124,10 +159,11 @@ process {
             
             $jql = [System.Web.HttpUtility]::UrlEncode($rawJql)
 
-            $fieldList = ($null -eq $ExtraFields ? $Fields : ($Fields += $ExtraFields -split ",")) -join ","
-
+            $fieldList = (($null -eq $ExtraFields -and $ExtraFields -ne "") ? $Fields : ($Fields += $ExtraFields -split ",")) -join ","
+            
             $report = @()
             $tickets = @()
+            $extendedAttribute = @()
 
             $url = "$($ApiUrl)/rest/api/2/search?startAt=$($StartAt)&maxResults=$($MaxResults)&jql=$($jql)&fields=$($fieldList)"
                 
@@ -150,9 +186,11 @@ process {
                     IssueKey = $item.key
                     Url      = $item.self
                 }
+                $issueKey = $_.key
+                $fields = $_.fields
                 $properties = [ordered]@{
                     IssueType      = $_.fields.issuetype.name
-                    IssueKey       = $_.key
+                    IssueKey       = $issueKey
                     IssueId        = $_.id
                     ParentKey      = $_.fields.parent.key
                     ParentType     = $_.fields.parent.fields.issuetype.name
@@ -171,16 +209,25 @@ process {
                     Resolution     = $_.fields.resolution.name
                     ResolutionDate = (Format-DateTimeOffset -Date $_.fields.resolutiondate)
                 }
-                if ($null -ne $ExtraFields -and $ExtraFields -notmatch "") {
-                    $ExtraFields | ForEach-Object {
-                        $properties[$_] = $item.fields.$_
-                    }
-                }
-
                 $report += New-Object PSObject -Property $properties
+
+                if ($null -ne $customFieldMetadata) {
+                    $customFieldMetadata.GetEnumerator() | ForEach-Object {
+                        $value = $fields."$($_.Key)"
+                        if ($null -ne $value) {
+                            $extendedAttribute += [PSCustomObject]@{
+                                IssueKey       = $issueKey
+                                AttributeName  = $_.Value
+                                AttributeId    = $_.Key
+                                AttributeValue = $value.ToString()
+                            }
+                        }
+                        
+                    }
+                }               
             }
 
-            $report, $tickets, $local:moreResult, $local:nextStartAt
+            $report, $extendedAttribute, $tickets, $local:moreResult, $local:nextStartAt
         }
     }
 
@@ -414,6 +461,7 @@ process {
     $startAt = 0
 
     $aggregatedTicketReport = @()
+    $aggregatedExtendedAttributeReport = @()
     $aggregatedAssigneeReport = @()
     $aggregatedStatusReport = @()
     $aggregatedRelatedReport = @()
@@ -421,7 +469,7 @@ process {
     do {
         $fileSuffix = (Get-Date -Format "yyyyMMddHHmmss")
 
-        $ticketReport, $tickets, $moreResult, $nextStartAt = Get-JiraTicket -ApiUrl $ApiUrl `
+        $ticketReport, $extendedAttribute, $tickets, $moreResult, $nextStartAt = Get-JiraTicket -ApiUrl $ApiUrl `
             -AuthHeader $authHeader `
             -Projects $Projects `
             -Since $Since `
@@ -435,6 +483,7 @@ process {
         $assigneeReport, $statusReport, $relatedReport = Get-JiraMetrics -AuthHeader $authHeader -Tickets $tickets
 
         $aggregatedTicketReport += $ticketReport
+        $aggregatedExtendedAttributeReport += $extendedAttribute
         $aggregatedAssigneeReport += $assigneeReport
         $aggregatedStatusReport += $statusReport
         $aggregatedRelatedReport += $relatedReport
@@ -443,12 +492,18 @@ process {
             switch ($OutputFormat) {
                 "JSON" {
                     $aggregatedTicketReport | ConvertTo-Json | Out-File -FilePath "jira_ticket_$($fileSuffix).json"
+                    if ($aggregatedExtendedAttributeReport.Count -gt 0) {
+                        $aggregatedExtendedAttributeReport | Convertto-Json | Out-File -FilePath "jira_extended_attribute_$($fileSuffix).json"
+                    }
                     $aggregatedAssigneeReport | ConvertTo-Json | Out-File -FilePath "jira_assignee_$($fileSuffix).json"
                     $aggregatedStatusReport | ConvertTo-Json | Out-File -FilePath "jira_status_$($fileSuffix).json"
                     $aggregatedRelatedReport | ConvertTo-Json | Out-File -FilePath "jira_related_$($fileSuffix).json"
                 }
                 "CSV" {
                     $aggregatedTicketReport | Export-Csv -Path "jira_ticket_$($fileSuffix).csv" -NoTypeInformation
+                    if ($aggregatedExtendedAttributeReport.Count -gt 0) {
+                        $aggregatedExtendedAttributeReport | Export-Csv -Path "jira_extended_attribute_$($fileSuffix).csv" -NoTypeInformation
+                    }
                     $aggregatedAssigneeReport | Export-Csv -Path "jira_assignee_$($fileSuffix).csv" -NoTypeInformation
                     $aggregatedStatusReport | Export-Csv -Path "jira_status_$($fileSuffix).csv" -NoTypeInformation
                     $aggregatedRelatedReport | Export-Csv -Path "jira_related_$($fileSuffix).csv" -NoTypeInformation
