@@ -110,16 +110,26 @@ process {
             $fields = $ExtraFields -split "," | ForEach-Object { $_.Trim() } 
 
             $metadata = @{}
+            $ids = @()
             $url = "$($ApiUrl)/rest/api/2/field"
             Write-Verbose "Retrieve custom field metadata from $($url)"
             $response = Invoke-RestMethod $url -Method 'GET' -Headers $headers
             $response | ForEach-Object {
-                if ($fields -contains $_.id) {
-                    $metadata[$_.id] = $_.name
+                $id = $_.id
+                $name = $_.name
+                $schemaType = $_.schema.type
+                $fields | ForEach-Object {
+                    if ($name -match $_) {
+                        $metadata[$id] = [PSCustomObject]@{
+                            Name       = $name
+                            SchemaType = $schemaType
+                        }
+                        $ids += $id
+                    }
                 }
             }
 
-            $metadata
+            $metadata, $ids
         }
     }
 
@@ -138,10 +148,11 @@ process {
         process {
 
             if ($null -ne $ExtraFields -and $ExtraFields -ne "") {
-                $customFieldMetadata = Get-CustomFieldMedataData -ApiUrl $ApiUrl -AuthHeader $AuthHeader -ExtraFields $ExtraFields
+                $customFieldMetadata, $customFieldIds = Get-CustomFieldMedataData -ApiUrl $ApiUrl -AuthHeader $AuthHeader -ExtraFields $ExtraFields
             }
             else {
                 $customFieldMetadata = $null
+                $customFieldIds = $null
             }
 
             $headers = New-Object "System.Collections.Generic.Dictionary[[String],[String]]"
@@ -159,7 +170,12 @@ process {
             
             $jql = [System.Web.HttpUtility]::UrlEncode($rawJql)
 
-            $fieldList = (($null -eq $ExtraFields -and $ExtraFields -ne "") ? $Fields : ($Fields += $ExtraFields -split ",")) -join ","
+            if ($null -eq $customFieldIds) {
+                $fieldList = $Fields -join ","
+            }
+            else {
+                $fieldList = ($Fields += $customFieldIds) -join ","
+            }
             
             $report = @()
             $tickets = @()
@@ -212,14 +228,48 @@ process {
                 $report += New-Object PSObject -Property $properties
 
                 if ($null -ne $customFieldMetadata) {
-                    $customFieldMetadata.GetEnumerator() | ForEach-Object {
-                        $value = $fields."$($_.Key)"
+                    $customFieldMetadata.Keys | ForEach-Object {
+                        $customfieldId = $_
+                        $customfieldValue = $fields."$($customfieldId)"
+                        $customfieldName = $customFieldMetadata[$customfieldId].Name
+                        $customfieldSchemaType = $customFieldMetadata[$customfieldId].SchemaType
+
+                        if ($null -eq $customfieldValue) {
+                            $value = $null
+                        }
+                        else {
+                            switch ($customfieldSchemaType) {
+                                'array' {
+                                    $value = ($customfieldValue | ForEach-Object { 
+                                            if ($null -ne $_.value) {
+                                                $_.value
+                                            }
+                                            else {
+                                                $_.name
+                                            } 
+                                        }) -join ","
+                                }
+                                'option' {
+                                    $value = $customfieldValue.value
+                                }
+                                'team' {
+                                    $value = $customfieldValue.name
+                                }
+                                'user' {
+                                    $value = $customfieldValue.displayName
+                                }
+                                default {
+                                    $value = $customfieldValue.ToString()
+                                }
+                            }
+                        }
+                        
                         if ($null -ne $value) {
                             $extendedAttribute += [PSCustomObject]@{
                                 IssueKey       = $issueKey
-                                AttributeName  = $_.Value
-                                AttributeId    = $_.Key
-                                AttributeValue = $value.ToString()
+                                AttributeName  = $customfieldName
+                                AttributeId    = $customfieldId
+                                AttributeValue = $value
                             }
                         }
                         
