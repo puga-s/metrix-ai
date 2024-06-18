@@ -4,7 +4,7 @@
 
 The `-ExtraFields` parameter is utilized for specifying a list of comma-separated field names that you wish to retrieve from JIRA. These field names should be provided in user-friendly format, such as `Story point` instead of their internal, technical identifiers (like `customfield_10000`). 
 
-The search process employs a case-insensitive regular expression method, meaning it will (partial) match any field name that corresponds to the specified input, regardless of its case. For instance, if you enter `story point`, both `Stor Point` and `Estimated Story points` would be considered as matches.
+The search process employs a case-insensitive regular expression method, meaning it will (partial) match any field name that corresponds to the specified input, regardless of its case. For instance, if you enter `story point`, both `Story Point` and `Estimated Story points` would be considered as matches.
 
 To get valuable metrics from JIRA, we highly recommend using this `-ExtraFields` option to pull _**story point**_ fields or any other custom attributes related to tagging _**production issues**_ and _**tech debt**_ or _**maintenance tasks**_. 
 
