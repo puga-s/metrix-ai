@@ -181,7 +181,7 @@ process {
             $tickets = @()
             $extendedAttribute = @()
 
-            $url = "$($ApiUrl)/rest/api/2/search?startAt=$($StartAt)&maxResults=$($MaxResults)&jql=$($jql)&fields=$($fieldList)"
+            $url = "$($ApiUrl)/rest/api/3/search/jql?startAt=$($StartAt)&maxResults=$($MaxResults)&jql=$($jql)&fields=$($fieldList)"
                 
             Write-Verbose "Retrieve next batch tickets from $($url)"
                 
